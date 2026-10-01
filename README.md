@@ -14,7 +14,6 @@ The gallery features a soft pastel theme using **light green, light pink, lavend
 - ✨ Smooth hover effects and transitions
 - 🔍 Image lightbox for viewing images in full size
 - ⬅️ Previous / Next image navigation
-- ⬇️ Download button
 - 🎨 Clean and modern card design
 
 ## 📂 Categories
@@ -25,17 +24,6 @@ The gallery contains images from four main categories:
 - 🏙️ **City**
 - 👤 **People**
 - ✈️ **Travel**
-
-## 🎨 Design
-
-The website uses a soft pastel color palette:
-
-- Light Green
-- Soft Pink
-- Light Purple / Lavender
-- Peach
-- Cream
-- Pastel Blue
 
 
 ### 🔗 Live Demo
