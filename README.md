@@ -39,4 +39,4 @@ The website uses a soft pastel color palette:
 
 
 ### 🔗 Live Demo
-[View Live Website](YOUR-LIVE-LINK-HERE)
+[View Live Website](https://umeaimansalman.github.io/Image-Gallery/)
