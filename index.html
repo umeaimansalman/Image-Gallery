@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beautiful Moments — Image Gallery</title>
+<style>
+  :root{
+    --bg: #14140f;
+    --card: #201f18;
+    --ink: #f4efe4;
+    --ink-dim: #b8b2a2;
+    --accent: #d8a54c;
+    --accent-dim: #8a6a30;
+    --line: rgba(244,239,228,0.10);
+    --radius: 10px;
+    --shadow: 0 14px 34px rgba(0,0,0,0.45);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header{
+    padding: 64px 6vw 36px;
+    max-width: 1400px;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .kicker{
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    margin: 0 0 14px;
+  }
+
+  h1{
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(2.2rem, 4.6vw, 3.8rem);
+    line-height: 1.05;
+    margin: 0 0 16px;
+  }
+
+  header p.sub{
+    font-size: 16px;
+    color: var(--ink-dim);
+    max-width: 56ch;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .filters{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 26px 6vw 0;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .filter-btn{
+    font-family: var(--sans);
+    font-size: 14px;
+    background: transparent;
+    color: var(--ink-dim);
+    border: 1px solid var(--line);
+    padding: 9px 20px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
+  }
+
+  .filter-btn:hover{
+    color: var(--ink);
+    border-color: var(--accent-dim);
+  }
+
+  .filter-btn.active{
+    background: var(--accent);
+    color: #201406;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .gallery{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 20px;
+    padding: 32px 6vw 90px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .card{
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--card);
+    cursor: pointer;
+    aspect-ratio: 4 / 5;
+    box-shadow: var(--shadow);
+  }
+
+  .card img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .card:hover img{ transform: scale(1.08); }
+
+  .card .overlay{
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(20,20,15,0) 40%, rgba(15,14,9,0.92) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 16px;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+
+  .card:hover .overlay{ opacity: 1; }
+
+  .card .view-icon{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(244,239,228,0.5);
+    background: rgba(20,20,15,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    pointer-events: none;
+  }
+
+  .card:hover .view-icon{ opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .card .view-icon svg{ width: 17px; height: 17px; stroke: var(--ink); }
+
+  .card .cat-tag{
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .card .img-title{
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .card.hidden{ display: none; }
+
+  .lightbox{
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,7,0.94);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 4vh 4vw;
+  }
+
+  .lightbox.open{ display: flex; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn{ from{ opacity:0; } to{ opacity:1; } }
+
+  .lightbox-inner{
+    position: relative;
+    max-width: 1100px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .lightbox-inner img{
+    max-width: 100%;
+    max-height: 74vh;
+    border-radius: 6px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    display: block;
+  }
+
+  .lightbox-caption{ margin-top: 18px; text-align: center; }
+
+  .lightbox-caption .img-title{
+    font-family: var(--serif);
+    font-size: 22px;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+
+  .lightbox-caption .meta{
+    font-size: 13px;
+    color: var(--ink-dim);
+    letter-spacing: 0.02em;
+  }
+
+  .lb-btn{
+    position: absolute;
+    background: rgba(244,239,228,0.06);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+
+  .lb-btn:hover{ background: rgba(216,165,76,0.16); border-color: var(--accent-dim); }
+  .lb-btn svg{ width: 20px; height: 20px; stroke: var(--ink); }
+
+  .lb-close{ top: -56px; right: 0; }
+  .lb-prev{ left: -64px; top: 50%; transform: translateY(-50%); }
+  .lb-next{ right: -64px; top: 50%; transform: translateY(-50%); }
+
+  @media (max-width: 820px){
+    .lb-prev{ left: 6px; }
+    .lb-next{ right: 6px; }
+    .lb-close{ top: 10px; right: 10px; }
+  }
+
+  footer{
+    text-align: center;
+    padding: 30px 6vw 60px;
+    color: var(--ink-dim);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="kicker">MY GALLERY</p>
+  <h1>Beautiful Moments</h1>
+  <p class="sub">A collection of my favorite photos. Click on any image to view it in full size.</p>
+</header>
+
+<nav class="filters" id="filters">
+  <button class="filter-btn active" data-category="all">All</button>
+  <button class="filter-btn" data-category="Asia">Nature</button>
+  <button class="filter-btn" data-category="Europe">City</button>
+  <button class="filter-btn" data-category="Africa">People</button>
+  <button class="filter-btn" data-category="Americas">Travels</button>
+  
+</nav>
+
+<!--
+  GALLERY — just replace the src="..." on each <img> with your own photo
+  (a link, or a filename like "photos/bali-01.jpg" if it sits next to this
+  index.html). Update alt text, the caption text, and data-category on the
+  .card div (Asia / Europe / Africa / Americas / Oceania) to match.
+  Add or delete whole .card blocks freely — 30 are included below.
+-->
+<main class="gallery" id="gallery">
+
+  <div class="card" data-category="Asia">
+    <img src="/images/morning mist.jfif" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Nature</p><p class="img-title">Morning Mist</p></div>
+  </div>
+
+  <div class="card" data-category="Asia">
+    <img src="/images/Wild Serenity.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Nature</p><p class="img-title">Wild Serenity</p></div>
+  </div>
+
+  <div class="card" data-category="Asia">
+    <img src="/images/mountains.avif" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Nature</p><p class="img-title">Mountains</p></div>
+  </div>
+
+  <div class="card" data-category="Asia">
+    <img src="/images/nature glow.webp" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Nature</p><p class="img-title">Nature Glow</p></div>
+  </div>
+
+  <div class="card" data-category="Asia">
+    <img src="/images/whispering trees.webp" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Nature</p><p class="img-title">Whispering Trees</p></div>
+  </div>
+
+  <div class="card" data-category="Asia">
+    <img src="/images/Golden Meadow.jfif" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Nature</p><p class="img-title">Golden Meadow</p></div>
+  </div>
+
+  <div class="card" data-category="Europe">
+    <img src="/images/city view.jfif" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">City</p><p class="img-title">City View</p></div>
+  </div>
+
+  <div class="card" data-category="Europe">
+    <img src="/images/city ligt.jfif" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">City</p><p class="img-title">City Light</p></div>
+  </div>
+
+  <div class="card" data-category="Europe">
+    <img src="/images/between buildings.jfif" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">City</p><p class="img-title">Between Buildings</p></div>
+  </div>
+
+  <div class="card" data-category="Europe">
+    <img src="/images/urban glo.jfif" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">City</p><p class="img-title">urban Glow</p></div>
+  </div>
+
+  <div class="card" data-category="Europe">
+    <img src="/images/after sunset.jfif" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">City</p><p class="img-title">after Sunset</p></div>
+  </div>
+
+  <div class="card" data-category="Europe">
+    <img src="/images/midnight streets.jfif" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">City</p><p class="img-title">Midnight streets</p></div>
+  </div>
+
+  <div class="card" data-category="Africa">
+    <img src="/images/candid moments.jfif" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">People</p><p class="img-title">Candid Sunset</p></div>
+  </div>
+
+  <div class="card" data-category="Africa">
+    <img src="/images/candid moment 1.webp" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">People</p><p class="img-title">Little Moments</p></div>
+  </div>
+
+  <div class="card" data-category="Africa">
+    <img src="/images/candid moment 3.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">People</p><p class="img-title">Misty Escape</p></div>
+  </div>
+
+  <div class="card" data-category="Africa">
+    <img src="/images/candid moment2.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">People</p><p class="img-title">Golden Hour</p></div>
+  </div>
+
+  <div class="card" data-category="Africa">
+    <img src="/images/candid moment4.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">People</p><p class="img-title">Coffee & Company</p></div>
+  </div>
+
+  <div class="card" data-category="Africa">
+    <img src="/images/candid moment5.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">People</p><p class="img-title">Forest Walk</p></div>
+  </div>
+
+  <div class="card" data-category="Americas">
+    <img src="/images/travel.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Travel</p><p class="img-title">Departure Dreams</p></div>
+  </div>
+
+  <div class="card" data-category="Americas">
+    <img src="/images/travel1.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Travel</p><p class="img-title">Golden Together</p></div>
+  </div>
+
+  <div class="card" data-category="Americas">
+    <img src="/images/travel2.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Travel</p><p class="img-title">Desert Memories</p></div>
+  </div>
+
+  <div class="card" data-category="Americas">
+    <img src="/images/travel3.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Travel</p><p class="img-title">Chasing New Horizons</p></div>
+  </div>
+
+  <div class="card" data-category="Americas">
+    <img src="/images/travel4.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Travel</p><p class="img-title">City Wanderer</p></div>
+  </div>
+
+  <div class="card" data-category="Americas">
+    <img src="/images/travel5.jpg" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Travel</p><p class="img-title">Midnight Glow</p></div>
+  </div>
+
+  <div class="card" data-category="Oceania">
+    <img src="https://picsum.photos/seed/travel25/900/1125" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Oceania</p><p class="img-title">Trip 25 — Place name</p></div>
+  </div>
+
+  <div class="card" data-category="Oceania">
+    <img src="https://picsum.photos/seed/travel26/900/1125" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Oceania</p><p class="img-title">Trip 26 — Place name</p></div>
+  </div>
+
+  <div class="card" data-category="Oceania">
+    <img src="https://picsum.photos/seed/travel27/900/1125" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Oceania</p><p class="img-title">Trip 27 — Place name</p></div>
+  </div>
+
+  <div class="card" data-category="Oceania">
+    <img src="https://picsum.photos/seed/travel28/900/1125" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Oceania</p><p class="img-title">Trip 28 — Place name</p></div>
+  </div>
+
+  <div class="card" data-category="Oceania">
+    <img src="https://picsum.photos/seed/travel29/900/1125" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Oceania</p><p class="img-title">Trip 29 — Place name</p></div>
+  </div>
+
+  <div class="card" data-category="Oceania">
+    <img src="https://picsum.photos/seed/travel30/900/1125" alt="Describe this photo">
+    <div class="view-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="overlay"><p class="cat-tag">Oceania</p><p class="img-title">Trip 30 — Place name</p></div>
+  </div>
+
+</main>
+
+<div class="lightbox" id="lightbox">
+  <div class="lightbox-inner">
+    <button class="lb-btn lb-close" id="lbClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <button class="lb-btn lb-prev" id="lbPrev" aria-label="Previous image">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <img id="lbImage" src="" alt="">
+    <button class="lb-btn lb-next" id="lbNext" aria-label="Next image">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="lightbox-caption">
+      <p class="img-title" id="lbTitle"></p>
+      <p class="meta"><span id="lbCategory"></span> · <span id="lbCounter"></span></p>
+    </div>
+  </div>
+</div>
+
+<footer>My Travels — built with plain HTML, CSS &amp; JavaScript.</footer>
+
+<script>
+  /* ---------- State ---------- */
+  let currentIndex = 0;
+  let visibleCards = [];   // the .card elements currently shown (respects filter)
+
+  /* ---------- Element references ---------- */
+  const galleryEl = document.getElementById("gallery");
+  const filtersEl = document.getElementById("filters");
+  const lightbox = document.getElementById("lightbox");
+  const lbImage = document.getElementById("lbImage");
+  const lbTitle = document.getElementById("lbTitle");
+  const lbCategory = document.getElementById("lbCategory");
+  const lbCounter = document.getElementById("lbCounter");
+
+  const allCards = Array.from(document.querySelectorAll(".card"));
+
+  /* ---------- Wire up each card to open the lightbox ---------- */
+  allCards.forEach(card => {
+    card.addEventListener("click", () => {
+      const index = visibleCards.indexOf(card);
+      if (index !== -1) openLightbox(index);
+    });
+  });
+
+  /* ---------- Filtering ---------- */
+  function filterImages(category){
+    allCards.forEach(card => {
+      const matches = category === "all" || card.getAttribute("data-category") === category;
+      card.classList.toggle("hidden", !matches);
+    });
+
+    visibleCards = allCards.filter(card => !card.classList.contains("hidden"));
+
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.getAttribute("data-category") === category);
+    });
+  }
+
+  filtersEl.addEventListener("click", (e) => {
+    const btn = e.target.closest(".filter-btn");
+    if (!btn) return;
+    filterImages(btn.getAttribute("data-category"));
+  });
+
+  /* ---------- Lightbox logic ---------- */
+  function openLightbox(index){
+    currentIndex = index;
+    showImage(currentIndex);
+    lightbox.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeLightbox(){
+    lightbox.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  function showImage(index){
+    const card = visibleCards[index];
+    const img = card.querySelector("img");
+    const title = card.querySelector(".img-title").textContent;
+    const category = card.getAttribute("data-category");
+
+    lbImage.src = img.src;
+    lbImage.alt = img.alt;
+    lbTitle.textContent = title;
+    lbCategory.textContent = category;
+    lbCounter.textContent = `${index + 1} / ${visibleCards.length}`;
+  }
+
+  function nextImage(){
+    currentIndex = (currentIndex + 1) % visibleCards.length;
+    showImage(currentIndex);
+  }
+
+  function previousImage(){
+    currentIndex = (currentIndex - 1 + visibleCards.length) % visibleCards.length;
+    showImage(currentIndex);
+  }
+
+  document.getElementById("lbClose").addEventListener("click", closeLightbox);
+  document.getElementById("lbNext").addEventListener("click", nextImage);
+  document.getElementById("lbPrev").addEventListener("click", previousImage);
+
+  lightbox.addEventListener("click", (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+
+  /* ---------- Keyboard controls ---------- */
+  document.addEventListener("keydown", (e) => {
+    if (!lightbox.classList.contains("open")) return;
+    if (e.key === "Escape") closeLightbox();
+    if (e.key === "ArrowRight") nextImage();
+    if (e.key === "ArrowLeft") previousImage();
+  });
+
+  /* ---------- Init ---------- */
+  filterImages("all");
+</script>
+
+</body>
+</html>
